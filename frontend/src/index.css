@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+
+:root {
+  --pp-bg: #050816;
+  --pp-bg2: #090d1d;
+  --pp-surface: rgba(13, 20, 39, .68);
+  --pp-surface-strong: rgba(15, 23, 42, .92);
+  --pp-border: rgba(255,255,255,.075);
+  --pp-text: #f8fafc;
+  --pp-muted: #94a3b8;
+  --pp-cyan: #339BFB;
+  --pp-blue: #305DE3;
+  --pp-purple: #620A9A;
+  --pp-magenta: #D323EA;
+}
+
+html[data-theme="dark"] { --pp-bg:#07101b; --pp-bg2:#0b1220; --pp-surface:rgba(15,25,43,.78); --pp-surface-strong:#0f192b; }
+html[data-theme="light"] { --pp-bg:#f4f7fb; --pp-bg2:#e9eef7; --pp-surface:rgba(255,255,255,.82); --pp-surface-strong:#ffffff; --pp-border:rgba(15,23,42,.10); --pp-text:#0f172a; --pp-muted:#64748b; }
+html[data-theme="midnight"] { --pp-bg:#02030a; --pp-bg2:#060816; --pp-surface:rgba(8,9,25,.82); --pp-surface-strong:#0a0b20; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  color: var(--pp-text);
+  background-color: var(--pp-bg);
+  background-image:
+    radial-gradient(circle at 12% -8%, rgba(48,93,227,.22) 0, transparent 30%),
+    radial-gradient(circle at 90% 4%, rgba(211,35,234,.16) 0, transparent 28%),
+    radial-gradient(circle at 52% 115%, rgba(51,155,251,.10) 0, transparent 35%);
+  background-attachment: fixed;
+}
+body::before { content:""; position:fixed; inset:0; pointer-events:none; opacity:.18; background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px); background-size:42px 42px; mask-image:linear-gradient(to bottom,black,transparent 85%); }
+[dir="rtl"] { font-family: 'Inter', 'Vazirmatn', sans-serif; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: linear-gradient(180deg,#305DE3,#9003AC); border-radius: 8px; }
+
+.glass { background: var(--pp-surface); backdrop-filter: blur(18px); border: 1px solid var(--pp-border); box-shadow: 0 16px 48px rgba(0,0,0,.18); }
+.glass-hover { transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
+.glass-hover:hover { transform: translateY(-2px); border-color: rgba(51,155,251,.25); box-shadow: 0 20px 60px rgba(48,93,227,.12); }
+
+.input { width:100%; background:rgba(255,255,255,.035); border:1px solid var(--pp-border); border-radius:.8rem; padding:.68rem .9rem; font-size:.875rem; color:var(--pp-text); outline:none; transition:.18s; }
+.input:focus { border-color:rgba(51,155,251,.7); box-shadow:0 0 0 3px rgba(51,155,251,.12),0 0 26px rgba(211,35,234,.08); }
+.input::placeholder { color:#64748b; }
+select.input { appearance:none; }
+
+.brand-live { position:relative; isolation:isolate; }
+.brand-live::before { content:""; position:absolute; inset:-35%; z-index:-1; border-radius:50%; background:conic-gradient(from 0deg,rgba(48,93,227,.0),rgba(51,155,251,.45),rgba(211,35,234,.5),rgba(48,93,227,0)); filter:blur(14px); animation:brand-spin 6s linear infinite; }
+.brand-logo { object-fit:contain; filter:drop-shadow(0 0 16px rgba(98,10,154,.42)); }
+.bg-brand-gradient { background:linear-gradient(135deg,#2023A5 0%,#305DE3 30%,#339BFB 52%,#620A9A 76%,#D323EA 100%); }
+.text-gradient { background:linear-gradient(135deg,#339BFB 0%,#620A9A 55%,#D323EA 100%); -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+/* Light theme readability overrides for the most common Tailwind text/surface utilities. */
+html[data-theme="light"] .text-slate-50, html[data-theme="light"] .text-slate-100, html[data-theme="light"] .text-slate-200 { color:#0f172a !important; }
+html[data-theme="light"] .text-slate-300, html[data-theme="light"] .text-slate-400 { color:#475569 !important; }
+html[data-theme="light"] .text-slate-500 { color:#64748b !important; }
+html[data-theme="light"] .border-white\/5, html[data-theme="light"] .border-white\/10 { border-color:rgba(15,23,42,.09) !important; }
+html[data-theme="light"] .hover\:bg-white\/5:hover, html[data-theme="light"] .hover\:bg-white\/\[0\.02\]:hover { background:rgba(15,23,42,.045) !important; }
+html[data-theme="light"] .bg-base-700 { background:#e8edf5 !important; }
+html[data-theme="light"] .glass { box-shadow:0 12px 34px rgba(15,23,42,.08); }
+
+@keyframes brand-spin { to { transform:rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; } }
