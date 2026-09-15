@@ -1,0 +1,104 @@
+# Pixel & Ping — Cloudflare Worker configuration.
+#
+# This is the ONLY backend deployment target for the Cloudflare-native
+# architecture: no VPS, no long-running Node process, no PostgreSQL. Run
+# `wrangler deploy` from this directory once D1/KV resources exist (see
+# README § Cloudflare-Native Deployment) and secrets are set.
+
+name = "pixel-and-ping"
+main = "src/index.ts"
+# Cloudflare Workers docs (checked live, Aug 2026): for compatibility dates
+# of 2026-08-04 or later, Node.js compatibility (bcryptjs/otplib/qrcode
+# all rely on parts of it) is enabled BY DEFAULT — the explicit
+# `nodejs_compat` flag is no longer needed and new configs should omit it.
+# Kept at today's date so that default applies; if you pin an older date,
+# add compatibility_flags = ["nodejs_compat"] back.
+compatibility_date = "2026-08-31"
+
+[dev]
+# Keep the local Worker API on the same port used by the Vite proxy.
+port = 8787
+ip = "127.0.0.1"
+
+[observability]
+enabled = true
+
+# ---------------------------------------------------------------------
+# D1 — primary relational database. Create with:
+#   npx wrangler d1 create pixelping
+# then paste the returned database_id below.
+# ---------------------------------------------------------------------
+[[d1_databases]]
+binding = "DB"
+database_name = "pixelping"
+database_id = "6a158fc6-76de-4ce6-bf65-fefe53d500af"
+migrations_dir = "migrations"
+
+# ---------------------------------------------------------------------
+# KV — cache/short-lived state only (Cloudflare API response cache,
+# health-check cache, rate-limit counters). Never the source of truth
+# for relational data — that's D1. Create with:
+#   npx wrangler kv namespace create PIXELPING_KV
+# ---------------------------------------------------------------------
+[[kv_namespaces]]
+binding = "PIXELPING_KV"
+id = "f87f47f0c09340cb9e3c2a529d38bee7"
+
+# ---------------------------------------------------------------------
+# Static assets — serves the built React frontend (frontend/dist) from
+# this SAME Worker, so the whole app (UI + API) is one `wrangler deploy`
+# with no separate static host needed. Build the frontend first:
+#   cd frontend && npm run build
+# then deploy from worker/. Requests that don't match a built asset file
+# fall through to the Worker's fetch handler (src/index.ts), which is
+# how /api/* keeps working from the same origin — no CORS needed at all
+# in this deployment shape (CORS in index.ts is only exercised when the
+# frontend is served from a different origin, e.g. local dev on :5173).
+# ---------------------------------------------------------------------
+[assets]
+directory = "../frontend/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+# Without this, "/api/*" would be swallowed by the SPA fallback above
+# (served index.html instead of reaching src/index.ts). This forces every
+# /api/* request to invoke the Worker script first, exactly like the
+# Node/Express version's routing. Requires Wrangler v4.20.0+ (pinned in
+# package.json) — older versions reject the array form of this key.
+run_worker_first = ["/api/*"]
+
+# ---------------------------------------------------------------------
+# Secrets (never committed — set with `wrangler secret put <NAME>`):
+#   JWT_SECRET            long random string, session token signing
+#   ENCRYPTION_KEY         32-byte base64 key, encrypts Cloudflare tokens at rest
+#   TELEGRAM_BOT_TOKEN      BotFather token (secret)
+#   TELEGRAM_WEBHOOK_SECRET Random webhook secret (secret)
+# Plain vars (safe to commit, non-secret):
+# ---------------------------------------------------------------------
+[vars]
+FRONTEND_ORIGIN = "http://localhost:5173"
+PRESENCE_TIMEOUT_SEC = "90"
+# "worker-relay": real vless/trojan relay built into this Worker itself
+# (src/services/relayService.ts) — no VPS needed for those two
+# protocols. "null": no VpnProvider configured (honest no-op; use this
+# if you're running your own external VPS + VPN daemon instead).
+VPN_PROVIDER = "worker-relay"
+# Your Cloudflare account ID (Workers & Pages Overview page, or any
+# zone's dashboard sidebar). Pair with `wrangler secret put CF_API_TOKEN`
+# (a token with Account Analytics:Read + Zone:Read/DNS:Read permissions)
+# to enable the self-usage widget and zone/DNS lookups — no "Add
+# Cloudflare Account" step in the panel itself, since a deployment only
+# ever runs under one Cloudflare account: your own.
+CF_ACCOUNT_ID = ""
+# Requests/day your plan includes — Workers Free = 100000. Cloudflare's
+# API has no "what's my plan's limit" endpoint, so raise this yourself
+# if you're on a paid plan.
+CF_DAILY_REQUEST_LIMIT = "100000"
+# Telegram bot admin (numeric Telegram user ID).
+ADMIN_TELEGRAM_ID = "8693613536"
+PUBLIC_BASE_URL = "https://pixel-and-ping.shcgdv.workers.dev"
+
+[triggers]
+# Runs the presence-cleanup / expiry-sweep / Cloudflare-sync jobs that the
+# Node backend ran via setInterval — Workers have no persistent process,
+# so these run as a Cron Trigger instead. See src/scheduled.ts.
+crons = ["*/5 * * * *"]
